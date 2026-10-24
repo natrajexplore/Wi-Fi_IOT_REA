@@ -1,0 +1,20 @@
+# Never commit real secrets or firmware dumps
+secrets.h
+*.bin
+dump*.bin
+*.pem
+*.key
+secure_boot_signing_key.pem
+*.csv
+
+# Build artifacts
+build/
+*.elf
+*.map
+.pio/
+.vscode/
+__pycache__/
+
+# Lab broker secrets
+broker/passwd
+broker/certs/
