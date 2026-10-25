@@ -48,6 +48,8 @@ Check your actual size first: `esptool.py flash_id`
 
 - Arduino IDE (or `arduino-cli`) with the **esp32 board package**
 - Python 3 + `esptool` and `paho-mqtt`: `pip install esptool paho-mqtt`
+  - On Windows, if the pip scripts dir isn't on PATH, invoke esptool as `python -m esptool`.
+  - Optional: `pip install amqtt` to run the no-hardware break-loop check (see below).
 - A **local MQTT broker** you control (Mosquitto is fine) — a ready config is in `broker/mosquitto.conf`
 - `mosquitto-clients` for the live view (`scripts/dashboard.sh`)
 - REA installed **only** from the official source — `npx skills add morluto/rea` — and `npx -y rea-agents setup --yes`
@@ -67,6 +69,18 @@ Check your actual size first: `esptool.py flash_id`
 8. Provision the hardened device: flash `firmware/provision/provision.ino` once, then flash `firmware/v2-hardened/`. Follow `docs/lab-guide.md` for flash encryption + Secure Boot.
 9. Re-dump, re-run `rea/03-verify-hardened-prompt.md`, fill `evidence/v2-findings.md`.
 10. Publish the before/after table.
+
+**No hardware yet?** You can verify the break-phase tooling offline — no board, no
+Mosquitto — with a pure-Python broker:
+
+```
+pip install amqtt paho-mqtt
+python scripts/verify-break-loop.py
+```
+
+It stands up a local broker that *requires* auth, confirms a wrong password is
+rejected, then runs `attack-mqtt.py` with the v1 creds and checks the spoofed
+`temp_c=999` messages reach a subscriber. Expect `RESULT: PASS`.
 
 Full walkthrough: [`docs/lab-guide.md`](docs/lab-guide.md).
 
@@ -91,9 +105,10 @@ hack-my-own-iot/
 │   ├── 02-attack-prompt.md       # map findings to impact
 │   └── 03-verify-hardened-prompt.md
 ├── scripts/
-│   ├── dump-flash.sh             # esptool flash dump
+│   ├── dump-flash.sh             # esptool flash dump (esptool v5; Windows-aware)
 │   ├── attack-mqtt.py           # publish fake data with extracted creds (your broker only)
-│   └── dashboard.sh             # live view of the telemetry feed
+│   ├── dashboard.sh             # live view of the telemetry feed
+│   └── verify-break-loop.py     # optional: prove the break loop offline (pure-Python broker)
 ├── evidence/
 │   ├── v1-findings.md            # fill from REA output
 │   └── v2-findings.md
