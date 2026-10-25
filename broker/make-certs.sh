@@ -16,6 +16,12 @@
 #
 set -euo pipefail
 
+# On Windows/Git Bash (MSYS) a bare-slash arg like -subj "/CN=..." gets rewritten
+# into a Windows path ("C:/Program Files/Git/CN=..."), breaking openssl. Disable
+# that path mangling. These vars are a no-op on Linux/macOS, so this stays portable.
+export MSYS2_ARG_CONV_EXCL='*'
+export MSYS_NO_PATHCONV=1
+
 IP="${1:-192.168.1.50}"
 DNS="${2:-broker.lab.local}"
 DIR="$(cd "$(dirname "$0")" && pwd)/certs"

@@ -21,11 +21,15 @@ PORT="${1:-}"
 SIZE="${2:-0x400000}"
 OUT="${3:-dump.bin}"
 
-# esptool ships as `esptool.py` (older) or `esptool` (newer). Prefer whichever exists.
-if command -v esptool.py >/dev/null 2>&1; then
-  ESPTOOL="esptool.py"
-elif command -v esptool >/dev/null 2>&1; then
-  ESPTOOL="esptool"
+# esptool ships as `esptool` (v5+), `esptool.py` (older), or only as a Python
+# module (common on Windows, where the pip scripts dir is often off PATH).
+# Prefer whichever exists; store as an array so a multi-word command works.
+if command -v esptool >/dev/null 2>&1; then
+  ESPTOOL=(esptool)
+elif command -v esptool.py >/dev/null 2>&1; then
+  ESPTOOL=(esptool.py)
+elif command -v python >/dev/null 2>&1 && python -m esptool version >/dev/null 2>&1; then
+  ESPTOOL=(python -m esptool)
 else
   echo "error: esptool not found. Install it with:  pip install esptool" >&2
   exit 1
@@ -39,16 +43,19 @@ if [ -z "$PORT" ]; then
 fi
 
 if [ -z "$PORT" ]; then
-  echo "error: no serial port found. Pass it explicitly, e.g. ./dump-flash.sh /dev/ttyUSB0" >&2
+  echo "error: no serial port found. Pass it explicitly:" >&2
+  echo "   Linux:   ./dump-flash.sh /dev/ttyUSB0" >&2
+  echo "   macOS:   ./dump-flash.sh /dev/cu.usbserial-0001" >&2
+  echo "   Windows: ./dump-flash.sh COM5        (check Device Manager / 'python -m esptool flash-id')" >&2
   exit 1
 fi
 
 echo ">> chip / flash info (confirm the real size before dumping):"
-"$ESPTOOL" --port "$PORT" flash_id || true
+"${ESPTOOL[@]}" --port "$PORT" flash-id || true
 echo
 
 echo ">> reading flash: port=$PORT size=$SIZE out=$OUT"
-"$ESPTOOL" --port "$PORT" --baud 921600 read_flash 0x0 "$SIZE" "$OUT"
+"${ESPTOOL[@]}" --port "$PORT" --baud 921600 read-flash 0x0 "$SIZE" "$OUT"
 
 echo
 echo ">> done. $(ls -lh "$OUT" | awk '{print $5}')  ->  $OUT"
